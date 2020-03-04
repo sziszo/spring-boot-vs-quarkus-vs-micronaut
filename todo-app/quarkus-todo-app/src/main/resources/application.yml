@@ -1,0 +1,13 @@
+quarkus:
+  http:
+    port: 9090
+  datasource:
+    url: jdbc:postgresql:${QUARKUS_TODO_DB:quarkus_todo}
+    driver: org.postgresql.Driver
+    username: ${POSTGRES_USER:admin}
+    password: ${POSTGRES_PASSWORD:admin}
+    max-size: 8
+    min-size: 2
+  hibernate-orm:
+    database:
+      generation: drop-and-create

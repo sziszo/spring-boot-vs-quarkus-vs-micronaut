@@ -10,6 +10,7 @@
 
     <modules>
         <module>todo-app/spring-todo-app</module>
+        <module>todo-app/quarkus-todo-app</module>
     </modules>
 
     <name>spring-boot-vs-quarkus-vs-micronaut</name>
