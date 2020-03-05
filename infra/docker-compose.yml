@@ -10,4 +10,4 @@ services:
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_MULTIPLE_DATABASES=quarkus_todo
+      - POSTGRES_MULTIPLE_DATABASES=quarkus_todo,spring_todo

@@ -17,7 +17,9 @@ spring:
       ddl-auto: create
   datasource:
     platform: h2
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:~/todo-app/spring-db;AUTO_SERVER=TRUE
-    username: admin
-    password: admin
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/${SPRING_TODO_DB:spring_todo}
+    username: ${POSTGRES_USER:admin}
+    password: ${POSTGRES_PASSWORD:admin}
+    initialization-mode: always
+
