@@ -2,7 +2,7 @@ quarkus:
   http:
     port: 9090
   datasource:
-    url: jdbc:postgresql:${QUARKUS_TODO_DB:quarkus_todo}
+    url: jdbc:postgresql://${POSTGRES_DB_HOST:localhost}/${QUARKUS_TODO_DB:quarkus_todo}
     driver: org.postgresql.Driver
     username: ${POSTGRES_USER:admin}
     password: ${POSTGRES_PASSWORD:admin}
@@ -11,3 +11,8 @@ quarkus:
   hibernate-orm:
     database:
       generation: drop-and-create
+
+"%prod":
+  quarkus:
+    hibernate-orm:
+      sql-load-script: import.sql

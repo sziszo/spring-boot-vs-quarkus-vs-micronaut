@@ -16,6 +16,7 @@
 
 	<properties>
 		<java.version>1.8</java.version>
+		<jib.maven.plugin>2.1.0</jib.maven.plugin>
 	</properties>
 
 	<dependencies>
@@ -65,6 +66,24 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>${jib.maven.plugin}</version>
+				<configuration>
+					<to>
+						<image>spring-todo-app</image>
+					</to>
+					<container>
+						<ports>
+							<port>8090</port>
+						</ports>
+						<environment>
+							<SPRING_OUTPUT_ANSI_ENABLED>ALWAYS</SPRING_OUTPUT_ANSI_ENABLED>
+						</environment>
+					</container>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

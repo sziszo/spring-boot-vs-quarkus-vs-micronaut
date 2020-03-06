@@ -18,7 +18,7 @@ spring:
   datasource:
     platform: h2
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/${SPRING_TODO_DB:spring_todo}
+    url: jdbc:postgresql://${POSTGRES_DB_HOST:localhost}:5432/${SPRING_TODO_DB:spring_todo}
     username: ${POSTGRES_USER:admin}
     password: ${POSTGRES_PASSWORD:admin}
     initialization-mode: always

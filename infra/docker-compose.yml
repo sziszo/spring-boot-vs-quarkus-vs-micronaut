@@ -1,7 +1,7 @@
 version: "3.7"
 services:
-  db:
-    container_name: "todo-app-db"
+  infra-db:
+    container_name: "infra-db"
     image: "postgres:11.5"
     ports:
     - 5432:5432
@@ -11,3 +11,8 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_MULTIPLE_DATABASES=quarkus_todo,spring_todo
+
+networks:
+  default:
+    external:
+      name: todo_app_network
