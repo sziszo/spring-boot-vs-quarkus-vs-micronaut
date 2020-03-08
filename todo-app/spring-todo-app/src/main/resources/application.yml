@@ -1,12 +1,22 @@
 server:
   port: 8090
 spring:
+  application:
+    name: spring-todo-app
   profiles:
     active: dev
   jackson:
     serialization:
       write-dates-as-timestamps: false
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 ---
 
