@@ -17,11 +17,12 @@ class QuarkusTodoAppMonitor(QuarkusAppMonitor):
         self.build_type = build_type
 
     def start(self):
-        super().run(image_name=f'quarkus-todo-app-{self.build_type}', port=9090)
+        super().run(image_name=f'quarkus-todo-app-{self.build_type}', port=8091)
 
 
 def main():
     monitors = [SpringTodoAppMonitor(), QuarkusTodoAppMonitor()]
+    # monitors = [QuarkusTodoAppMonitor()]
     for monitor in monitors:
         monitor.start()
         time.sleep(5)

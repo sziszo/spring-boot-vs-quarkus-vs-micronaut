@@ -4,3 +4,7 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: ['spring-todo-app:8090']
+  - job_name: quarkus-todo-app-jvm
+    scrape_interval: 5s
+    static_configs:
+        - targets: ['quarkus-todo-app-jvm:8091']

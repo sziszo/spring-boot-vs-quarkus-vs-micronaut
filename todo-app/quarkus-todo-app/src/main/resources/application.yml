@@ -1,6 +1,6 @@
 quarkus:
   http:
-    port: 9090
+    port: 8091
   datasource:
     url: jdbc:postgresql://${POSTGRES_DB_HOST:localhost}/${QUARKUS_TODO_DB:quarkus_todo}
     driver: org.postgresql.Driver
