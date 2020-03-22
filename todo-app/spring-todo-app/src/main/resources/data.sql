@@ -1,4 +1,4 @@
 
-INSERT INTO TODO (TITLE, CREATED) VALUES ('SpringBoot Todo-1', '2020-02-29 01:20' );
-INSERT INTO TODO (TITLE, CREATED) VALUES ('SpringBoot Todo-2', '2020-02-29 02:30' );
-INSERT INTO TODO (TITLE, CREATED) VALUES ('SpringBoot Todo-3', '2020-02-29 03:40' );
+INSERT INTO TODO (TITLE, CREATED) VALUES ('SpringBoot Todo-1', current_timestamp );
+INSERT INTO TODO (TITLE, CREATED) VALUES ('SpringBoot Todo-2', current_timestamp );
+INSERT INTO TODO (TITLE, CREATED) VALUES ('SpringBoot Todo-3', current_timestamp );

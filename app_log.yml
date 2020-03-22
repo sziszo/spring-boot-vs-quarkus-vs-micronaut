@@ -1,0 +1,28 @@
+version: 1
+
+formatters:
+  simple:
+    format: "%(asctime)s %(message)s"
+  extended:
+    format: "%(asctime)s %(name)s %(levelname)s: %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: simple
+
+  file_handler:
+    class: logging.FileHandler
+    filename: .logs/app.log
+    formatter: extended
+
+loggers:
+  tools.app_monitor:
+    handlers: [console, file_handler]
+    level: DEBUG
+  tools.app_builder:
+    handlers: [console, file_handler]
+    level: DEBUG
+  root:
+    handlers: [console, file_handler]
+    level: WARNING

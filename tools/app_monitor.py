@@ -1,12 +1,13 @@
-import docker
-import time
-import re
 import logging.config
+import re
+import time
+from collections import defaultdict
 
+import docker
 from docker.errors import NotFound
-from utils import bytesto
 
-logging.config.fileConfig(fname='log.conf', disable_existing_loggers=False)
+from .app_utils import bytesto
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -15,19 +16,29 @@ class AppMonitor:
     def __init__(self, waiting_message, timeout):
         self.message = waiting_message
         self.timeout = timeout
+        self.startupTime = 0
+        self.startupMemoryUsage = 0
 
-    def run(self, image_name, port):
-        self.__stop_container(image_name)
+    def start(self):
+        pass
 
-        container = self.__start_container(image_name, port)
+    def stop(self):
+        pass
+
+    def run(self, image_name, container_port, host_port=None):
+        self.stop_container(image_name)
+
+        port = host_port if host_port else container_port
+        container = self.__start_container(image_name, container_port, port)
         self.__monitor_startup(container)
+        self.__monitor_startup_memory_usage(container)
 
         LOGGER.info(f'{image_name} listening on port {port}')
         self.print_startup_result()
         self.print_memory_usage(container)
 
     @staticmethod
-    def __stop_container(container_name):
+    def stop_container(container_name):
         client = docker.from_env()
         try:
             container = client.containers.get(container_name)
@@ -38,7 +49,7 @@ class AppMonitor:
             LOGGER.debug(f'{container_name} is not running')
 
     @staticmethod
-    def __start_container(image_name, port):
+    def __start_container(image_name, container_port, host_port):
         LOGGER.info(f'Starting {image_name} container ...')
         client = docker.from_env()
         return client.containers.run(image_name,
@@ -46,7 +57,7 @@ class AppMonitor:
                                      detach=True,
                                      remove=True,
                                      network='todo_app_network',
-                                     ports={f'{port}/tcp': port},
+                                     ports={f'{container_port}/tcp': host_port},
                                      environment=["POSTGRES_DB_HOST=infra-db"])
 
     def __monitor_startup(self, container):
@@ -66,16 +77,26 @@ class AppMonitor:
     def process_log_message(self, log_message):
         pass
 
+    def __monitor_startup_memory_usage(self, container):
+        stats = container.stats(stream=False)
+        self.startupMemoryUsage = round(bytesto(stats["memory_stats"]["usage"]), 1)
+
     def print_startup_result(self):
         LOGGER.info(f'startupTime: {self.startupTime}')
 
     def run_test(self):
         pass
 
+    def print_memory_usage(self, container):
+        LOGGER.info(f'memory usage: {self.startupMemoryUsage}Mb')
+
     @staticmethod
-    def print_memory_usage(container):
-        stats = container.stats(stream=False)
-        LOGGER.info(f'memory usage: {round(bytesto(stats["memory_stats"]["usage"]), 1)}Mb')
+    def to_result_table(app_name, app_startup, jvm_startup, startup_memory_usage):
+        table = defaultdict(dict)
+        table[app_name]["app-startup"] = app_startup
+        table[app_name]["jvm-startup"] = jvm_startup
+        table[app_name]["startup-memory-usage"] = f'{startup_memory_usage}Mb'
+        return table
 
 
 class SpringAppMonitor(AppMonitor):
@@ -96,7 +117,10 @@ class SpringAppMonitor(AppMonitor):
     def print_startup_result(self):
         # super().printStartupResult()
         LOGGER.info(f'app-startup: {self.app_startup}')
-        LOGGER.info(f'jvm-startup: {self.jvm_startup}')
+        LOGGER.info(f'vm-startup: {self.jvm_startup}')
+
+    def get_result_table(self, app_name):
+        return super().to_result_table(app_name, self.app_startup, self.jvm_startup, self.startupMemoryUsage)
 
 
 class QuarkusAppMonitor(AppMonitor):
@@ -107,7 +131,6 @@ class QuarkusAppMonitor(AppMonitor):
     def __init__(self, timeout=120):
         super().__init__('started in', timeout)
         self.app_startup = ''
-        self.jvm_startup = ''
 
     def process_log_message(self, log_message):
         self.app_startup = re.search(self.APP_STARTUP_PATTERN, log_message).group(1)
@@ -116,3 +139,6 @@ class QuarkusAppMonitor(AppMonitor):
         # super().printStartupResult()
         LOGGER.info(f'app-startup: {self.app_startup}')
         LOGGER.info(f'jvm-startup: {self.startupTime}')
+
+    def get_result_table(self, app_name):
+        return super().to_result_table(app_name, self.app_startup, self.startupTime, self.startupMemoryUsage)

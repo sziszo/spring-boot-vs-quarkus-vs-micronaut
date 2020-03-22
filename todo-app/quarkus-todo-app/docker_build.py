@@ -12,12 +12,13 @@ def main():
 
     print(f'build_type={args.build_type}')
 
-    dockerfile = Path.cwd() / 'src' / 'main' / 'docker' / f'Dockerfile.{args.build_type}'
+    source_dir = Path(__file__).parent.resolve()
+    dockerfile = source_dir / 'src' / 'main' / 'docker' / f'Dockerfile.{args.build_type}'
 
     print(f'docker_file={dockerfile}')
 
     client = docker.from_env()
-    client.images.build(path="./",
+    client.images.build(path=f'{source_dir}',
                         dockerfile=dockerfile.resolve(),
                         tag=f'quarkus-todo-app-{args.build_type}')
 
