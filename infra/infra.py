@@ -55,7 +55,7 @@ dispatcher = {'start': start, 'stop': stop}
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Manage the infrastructure')
+    parser = argparse.ArgumentParser(description='Manage the infrastructure', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("action_command", help="set action command", default='start', choices=['start', 'stop'],
                         nargs='?')
     args = parser.parse_args()

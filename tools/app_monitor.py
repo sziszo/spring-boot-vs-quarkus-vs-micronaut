@@ -45,6 +45,7 @@ class AppMonitor:
             LOGGER.warning(f'{container_name} container is running')
             container.stop()
             LOGGER.info(f'{container_name} container is stopped')
+            time.sleep(0.5)
         except NotFound:
             LOGGER.debug(f'{container_name} is not running')
 

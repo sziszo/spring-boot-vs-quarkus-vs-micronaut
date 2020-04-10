@@ -19,7 +19,7 @@ class QuarkusTodoAppBuilder(QuarkusAppBuilder):
 
 
 class BuilderApp:
-    def __init__(self, build_type='jvm', app_type=None):
+    def __init__(self, build_type='jvm', app_type='all'):
         self.build_type = build_type
         self.type = app_type
 
@@ -32,9 +32,9 @@ class BuilderApp:
         if self.build_type == 'native':
             builders = [QuarkusTodoAppBuilder(self.build_type)]
         else:
-            if not self.type or self.type == 'spring':
+            if self.type == 'all' or self.type == 'spring':
                 builders.append(SpringTodoAppBuilder())
-            if not self.type or self.type == 'quarkus':
+            if self.type == 'all' or self.type == 'quarkus':
                 builders.append(QuarkusTodoAppBuilder(self.build_type))
 
         result = {}
@@ -44,9 +44,9 @@ class BuilderApp:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='This is the builder for todo-app')
-    parser.add_argument("-t", "--type", help="set app type", default=None, choices=['spring', 'quarkus'])
-    parser.add_argument("build_type", help="set build type", default='jvm', choices=['jvm', 'native'], nargs='?')
+    parser = argparse.ArgumentParser(description='This is the builder for todo-app', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-t", "--type", help="set app type", default='all', choices=['spring', 'quarkus', 'all'])
+    parser.add_argument("build_type", help="set build type", default='all', choices=['jvm', 'native', 'all'], nargs='?')
     args = parser.parse_args()
 
     b = BuilderApp(args.build_type, args.type)

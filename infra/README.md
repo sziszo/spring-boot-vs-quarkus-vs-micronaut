@@ -1,7 +1,8 @@
 # Infra
+postgres-db, prometheus, grafana
 
-### Start infra db
-`$ ./infra.sh start`
+### Start infra
+`$ ./infra.py start`
 
-### Stop infra db
-`$ ./infra.sh stop`
+### Stop infra
+`$ ./infra.py stop`

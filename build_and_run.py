@@ -25,21 +25,22 @@ def build_and_run_apps(build_type='jvm', app_type=None):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--type", help="set app type", default=None, choices=['spring', 'quarkus'])
-    parser.add_argument("build_type", help="set build type", default=None, choices=['jvm', 'native'], nargs='?')
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-t", "--type", help="set app type", default='all', choices=['spring', 'quarkus', 'all'])
+    parser.add_argument("build_type", help="set build type", default='all', choices=['jvm', 'native', 'all'], nargs='?')
     args = parser.parse_args()
 
     start_infra()
 
     jvm_result = {}
-    if not args.build_type or args.build_type == 'jvm':
+    if args.build_type == 'all' or args.build_type == 'jvm':
         jvm_result = build_and_run_apps('jvm', args.type)
         if jvm_result:
             print(f'JVM result:\n{pd.DataFrame(jvm_result)}\n')
 
     native_result = {}
-    if not args.build_type or args.build_type == 'native':
+
+    if args.type != 'spring' and (args.build_type == 'all' or args.build_type == 'native'):
         native_result = build_and_run_apps('native')
         if native_result:
             print(f'GraalVM result:\n{pd.DataFrame(native_result)}\n')

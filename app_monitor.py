@@ -40,7 +40,7 @@ class QuarkusTodoAppMonitor(QuarkusAppMonitor):
 
 
 class MonitorApp:
-    def __init__(self, build_type='jvm', app_type=None):
+    def __init__(self, build_type='jvm', app_type='all'):
         self.type = app_type
         self.build_type = build_type
 
@@ -50,13 +50,13 @@ class MonitorApp:
             logging.config.dictConfig(log_cfg)
 
         monitors = []
-        if self.build_type == 'native':
-            monitors.append(QuarkusTodoAppMonitor(self.build_type))
-        else:
-            if not self.type or self.type == 'spring':
+        if self.type != 'spring' and (self.build_type == 'all' or self.build_type == 'native'):
+            monitors.append(QuarkusTodoAppMonitor('native'))
+        if self.build_type == 'all' or self.build_type == 'jvm':
+            if self.type == 'all' or self.type == 'spring':
                 monitors.append(SpringTodoAppMonitor())
-            if not self.type or self.type == 'quarkus':
-                monitors.append(QuarkusTodoAppMonitor(self.build_type))
+            if self.type == 'all' or self.type == 'quarkus':
+                monitors.append(QuarkusTodoAppMonitor('jvm'))
 
         is_start = action_command == 'start'
         result = {}
@@ -67,9 +67,9 @@ class MonitorApp:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Manage the infrastructure')
-    parser.add_argument("-t", "--type", help="set app type", default='', choices=['spring', 'quarkus'])
-    parser.add_argument("-b", "--build_type", help="set build type", default='jvm', choices=['jvm', 'native'])
+    parser = argparse.ArgumentParser(description='Manage the infrastructure', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-t", "--type", help="set app type", default='all', choices=['spring', 'quarkus', 'all'])
+    parser.add_argument("-b", "--build_type", help="set build type", default='all', choices=['jvm', 'native', 'all'])
     parser.add_argument("action_command", help="set action command", default='start', choices=['start', 'stop'],
                         nargs='?')
     args = parser.parse_args()
