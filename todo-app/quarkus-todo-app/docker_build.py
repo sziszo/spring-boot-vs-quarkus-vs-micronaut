@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
-import docker
 import argparse
+import re
+import subprocess
 from pathlib import Path
+
+import docker
 
 
 def main():
@@ -12,8 +15,16 @@ def main():
 
     print(f'build_type={args.build_type}')
 
+    build_type = args.build_type
+    if args.build_type == 'jvm':
+        java_version = re.search(r'\"(\d+\.\d+).*\"',
+                                 str(subprocess.check_output(['java', '-version'],
+                                                             stderr=subprocess.STDOUT))).group(1)
+        if java_version.startswith('11'):
+            build_type = f'{build_type}11'
+
     source_dir = Path(__file__).parent.resolve()
-    dockerfile = source_dir / 'src' / 'main' / 'docker' / f'Dockerfile.{args.build_type}'
+    dockerfile = source_dir / 'src' / 'main' / 'docker' / f'Dockerfile.{build_type}'
 
     print(f'docker_file={dockerfile}')
 

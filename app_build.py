@@ -44,7 +44,8 @@ class BuilderApp:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='This is the builder for todo-app', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description='This is the builder for todo-app',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-t", "--type", help="set app type", default='all', choices=['spring', 'quarkus', 'all'])
     parser.add_argument("build_type", help="set build type", default='all', choices=['jvm', 'native', 'all'], nargs='?')
     args = parser.parse_args()

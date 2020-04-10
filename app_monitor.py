@@ -67,7 +67,8 @@ class MonitorApp:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Manage the infrastructure', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description='Manage the infrastructure',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-t", "--type", help="set app type", default='all', choices=['spring', 'quarkus', 'all'])
     parser.add_argument("-b", "--build_type", help="set build type", default='all', choices=['jvm', 'native', 'all'])
     parser.add_argument("action_command", help="set action command", default='start', choices=['start', 'stop'],
