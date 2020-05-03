@@ -6,8 +6,8 @@ import subprocess
 import pandas as pd
 import yaml
 
-from app_build import BuilderApp, set_verbose as set_verbose_builder
-from app_monitor import MonitorApp, set_verbose as set_verbose_monitor
+from builder import BuilderApp, set_verbose as set_verbose_builder
+from monitor import MonitorApp, set_verbose as set_verbose_monitor
 from tools.app_utils import merge_dicts
 
 
@@ -39,7 +39,7 @@ def main():
     parser.add_argument("build_type", help="set build type", default='all', choices=['jvm', 'native', 'all'], nargs='?')
     args = parser.parse_args()
 
-    with open('app_log.yml', 'r') as f:
+    with open('log.yml', 'r') as f:
         log_cfg = yaml.safe_load(f.read())
         logging.config.dictConfig(log_cfg)
 

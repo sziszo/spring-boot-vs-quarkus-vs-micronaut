@@ -51,7 +51,7 @@ def main():
     parser.add_argument("build_type", help="set build type", default='all', choices=['jvm', 'native', 'all'], nargs='?')
     args = parser.parse_args()
 
-    with open('app_log.yml', 'r') as f:
+    with open('log.yml', 'r') as f:
         log_cfg = yaml.safe_load(f.read())
         logging.config.dictConfig(log_cfg)
 

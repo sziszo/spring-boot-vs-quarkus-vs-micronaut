@@ -80,7 +80,7 @@ def main():
     args = parser.parse_args()
 
     import logging.config
-    with open('app_log.yml', 'r') as f:
+    with open('log.yml', 'r') as f:
         log_cfg = yaml.safe_load(f.read())
         logging.config.dictConfig(log_cfg)
 
