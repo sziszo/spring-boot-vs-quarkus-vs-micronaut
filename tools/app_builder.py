@@ -5,9 +5,13 @@ from collections import defaultdict
 from pathlib import Path
 
 from .app_utils import get_image_name
+from .globals import DEFAULT_LOG_FOLDER
 
 LOGGER = logging.getLogger(__name__)
-DEFAULT_LOG_FOLDER = '.logs'
+
+
+def set_verbose():
+    LOGGER.setLevel('DEBUG')
 
 
 class AppBuilder:
@@ -42,6 +46,7 @@ class AppBuilder:
 
 class SpringAppBuilder(AppBuilder):
     def __init__(self, path):
+        super(SpringAppBuilder, self).__init__()
         self.path = path
         self.app_name = Path(path).stem
         self.output_file = f'{DEFAULT_LOG_FOLDER}/{self.app_name}.out'
@@ -69,6 +74,7 @@ class SpringAppBuilder(AppBuilder):
 
 class QuarkusAppBuilder(AppBuilder):
     def __init__(self, path, build_type='jvm'):
+        super(QuarkusAppBuilder, self).__init__()
         self.path = path
         self.build_type = build_type
         self.app_name = Path(path).stem

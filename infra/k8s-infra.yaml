@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: infra-db
+      labels:
+        app: infra-db
+    spec:
+      type: NodePort
+      ports:
+        - port: 5432
+      selector:
+        app: infra-db
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: infra-db-deployment
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: infra-db
+      template:
+        metadata:
+          name: infra-db
+          labels:
+            app: infra-db
+            env: dev
+        spec:
+          hostname: infra-db
+          containers:
+            - name: infra-db
+              image: infra-db:1.0.0
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 5432
+              envFrom:
+                - configMapRef:
+                    name: infra-db-config
+

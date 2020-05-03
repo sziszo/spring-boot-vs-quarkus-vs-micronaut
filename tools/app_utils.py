@@ -1,18 +1,17 @@
 from pathlib import Path
 
 
-def bytesto(bytes, to='m', bsize=1024):
+def bytesto(bytes, from_='b', to='m', bsize=1024):
     """convert bytes to megabytes, etc.
        sample code:
            print('mb= ' + str(bytesto(314575262000000, 'm')))
        sample output:
            mb= 300002347.946
     """
-    a = {'k': 1, 'm': 2, 'g': 3, 't': 4, 'p': 5, 'e': 6}
+    a = {'b': 0, 'k': 1, 'Ki': 1, 'm': 2, 'Mi': 2, 'g': 3, 'Gi': 3, 't': 4, 'Ti': 4, 'p': 5, 'Pi': 5, 'e': 6, 'Ei': 6}
     r = float(bytes)
-    for i in range(a[to]):
+    for i in range(a[from_], a[to]):
         r = r / bsize
-
     return r
 
 
@@ -38,3 +37,12 @@ def merge_dicts(a, b, path=None):
         else:
             a[key] = b[key]
     return a
+
+
+def read_dot_env_file(env_file):
+    d = {}
+    with open(env_file, 'r') as f:
+        for line in f:
+            (key, val) = line.split('=')
+            d[key] = val.rstrip()
+    return d

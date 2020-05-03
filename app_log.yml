@@ -19,10 +19,13 @@ handlers:
 loggers:
   tools.app_monitor:
     handlers: [console, file_handler]
-    level: DEBUG
+    level: INFO
   tools.app_builder:
     handlers: [console, file_handler]
-    level: DEBUG
+    level: INFO
+  tools.platform:
+    handlers: [console, file_handler]
+    level: INFO
   root:
     handlers: [console, file_handler]
-    level: WARNING
+    level: INFO

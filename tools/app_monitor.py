@@ -3,17 +3,19 @@ import re
 import time
 from collections import defaultdict
 
-import docker
-from docker.errors import NotFound
-
-from .app_utils import bytesto
+from .platform import PlatformManagerFactory
 
 LOGGER = logging.getLogger(__name__)
 
 
+def set_verbose():
+    LOGGER.setLevel('DEBUG')
+
+
 class AppMonitor:
 
-    def __init__(self, waiting_message, timeout):
+    def __init__(self, platform_manager, waiting_message, timeout):
+        self.platformManager = platform_manager
         self.message = waiting_message
         self.timeout = timeout
         self.startupTime = 0
@@ -25,70 +27,56 @@ class AppMonitor:
     def stop(self):
         pass
 
-    def run(self, image_name, container_port, host_port=None):
-        self.stop_container(image_name)
+    def run(self):
+        self.platformManager.stop_app()
+        self.platformManager.start_app()
+        self.__monitor_startup()
 
-        port = host_port if host_port else container_port
-        container = self.__start_container(image_name, container_port, port)
-        self.__monitor_startup(container)
-        self.__monitor_startup_memory_usage(container)
+        LOGGER.info(f'{self.platformManager.container_name} listening on port {self.platformManager.host_port}')
 
-        LOGGER.info(f'{image_name} listening on port {port}')
+        self.__monitor_startup_memory_usage()
+
         self.print_startup_result()
-        self.print_memory_usage(container)
+        self.print_memory_usage()
 
-    @staticmethod
-    def stop_container(container_name):
-        client = docker.from_env()
-        try:
-            container = client.containers.get(container_name)
-            LOGGER.warning(f'{container_name} container is running')
-            container.stop()
-            LOGGER.info(f'{container_name} container is stopped')
-            time.sleep(0.5)
-        except NotFound:
-            LOGGER.debug(f'{container_name} is not running')
-
-    @staticmethod
-    def __start_container(image_name, container_port, host_port):
-        LOGGER.info(f'Starting {image_name} container ...')
-        client = docker.from_env()
-        return client.containers.run(image_name,
-                                     name=f'{image_name}',
-                                     detach=True,
-                                     remove=True,
-                                     network='todo_app_network',
-                                     ports={f'{container_port}/tcp': host_port},
-                                     environment=["POSTGRES_DB_HOST=infra-db"])
-
-    def __monitor_startup(self, container):
+    def __monitor_startup(self):
         start_time = time.time()
         end_time = start_time
-        for line in container.logs(stream=True):
-            log_message = str(line, 'utf-8')
-            if self.message in log_message:
-                end_time = time.time()
-                self.process_log_message(log_message)
-                break
-            elif end_time - start_time >= self.timeout:
-                break
+        attempt = 1
+        done = False
+        while not done and attempt < 10:
+            for line in self.platformManager.logs():
+                log_message = str(line, 'utf-8')
+                LOGGER.debug(f'line={log_message}')
+                if self.message in log_message:
+                    end_time = time.time()
+                    self.process_log_message(log_message)
+                    done = True
+                    break
+                elif time.time() - start_time >= self.timeout:
+                    done = True
+                    break
+            attempt += 1
+            if not done:
+                sleeping_time = 1
+                LOGGER.info(f'attempt {attempt}: waiting {sleeping_time} to get the logs of {self.platformManager.container_name}')
+                time.sleep(sleeping_time)
 
         self.startupTime = round(end_time - start_time, 3)
 
     def process_log_message(self, log_message):
         pass
 
-    def __monitor_startup_memory_usage(self, container):
-        stats = container.stats(stream=False)
-        self.startupMemoryUsage = round(bytesto(stats["memory_stats"]["usage"]), 1)
+    def run_test(self):
+        pass
 
     def print_startup_result(self):
         LOGGER.info(f'startupTime: {self.startupTime}')
 
-    def run_test(self):
-        pass
+    def __monitor_startup_memory_usage(self):
+        self.startupMemoryUsage = self.platformManager.memory_usage()
 
-    def print_memory_usage(self, container):
+    def print_memory_usage(self):
         LOGGER.info(f'memory usage: {self.startupMemoryUsage}Mb')
 
     @staticmethod
@@ -106,8 +94,11 @@ class SpringAppMonitor(AppMonitor):
 
     LOGGER = logging.getLogger(__name__)
 
-    def __init__(self, timeout=120):
-        super().__init__('Started', timeout)
+    def __init__(self, image_name, container_name, container_port, platform='docker', timeout=120):
+        super().__init__(PlatformManagerFactory.create(platform, image_name, container_name, container_port),
+                         'Started', timeout)
+        self.image_name = image_name
+        self.container_name = container_name
         self.app_startup = ''
         self.jvm_startup = ''
 
@@ -129,8 +120,11 @@ class QuarkusAppMonitor(AppMonitor):
 
     APP_STARTUP_PATTERN = re.compile(r'in ([0-9]+[.]?[0-9]*)s')
 
-    def __init__(self, timeout=120):
-        super().__init__('started in', timeout)
+    def __init__(self, image_name, container_name, container_port, host_port, platform='docker', timeout=120):
+        super().__init__(PlatformManagerFactory.create(platform, image_name, container_name, container_port, host_port),
+                         'started in', timeout)
+        self.image_name = image_name
+        self.container_name = container_name
         self.app_startup = ''
 
     def process_log_message(self, log_message):
