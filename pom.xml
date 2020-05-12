@@ -11,6 +11,7 @@
     <modules>
         <module>todo-app/spring-todo-app</module>
         <module>todo-app/quarkus-todo-app</module>
+        <module>todo-app/micronaut-todo-app</module>
         <module>tools</module>
     </modules>
 
