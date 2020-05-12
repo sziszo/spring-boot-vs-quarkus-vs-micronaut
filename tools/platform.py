@@ -7,7 +7,7 @@ import docker
 from docker.errors import NotFound
 from kubernetes import client as k8s_client, config as k8s_config
 from kubernetes.client import V1LabelSelector, V1ObjectMeta, V1DeploymentSpec, V1PodTemplateSpec, V1PodSpec, \
-    V1Container, V1ContainerPort, V1EnvFromSource, V1ConfigMapEnvSource, V1Deployment
+    V1Container, V1ContainerPort, V1EnvFromSource, V1ConfigMapEnvSource, V1Deployment, V1ServicePort
 from kubernetes.client.rest import ApiException
 
 from .app_utils import bytesto
@@ -98,6 +98,10 @@ class KubernetesPlatformManager(PlatformManager):
 
     def start_app(self):
         labels = {'app': self.container_name}
+        self.__create_app_deployment(labels)
+        self.__create_app_service(labels)
+
+    def __create_app_deployment(self, labels):
         container_port = V1ContainerPort(container_port=self.container_port)
         config_map_ref = V1ConfigMapEnvSource(name=INFRA_DB_CONFIG)
         container = V1Container(name=self.container_name, image=self.image_name, image_pull_policy='IfNotPresent',
@@ -107,10 +111,21 @@ class KubernetesPlatformManager(PlatformManager):
         deployment_spec = V1DeploymentSpec(replicas=1, selector=V1LabelSelector(match_labels=labels),
                                            template=pod_temp_spec)
         deployment = V1Deployment(metadata=V1ObjectMeta(name=self.container_name), spec=deployment_spec)
-
         self.appsApi.create_namespaced_deployment(namespace=TODO_APP_NAMESPACE, body=deployment)
 
+    def __create_app_service(self, labels):
+        service_spec = k8s_client.V1ServiceSpec(selector=labels,
+                                                ports=[V1ServicePort(port=self.container_port,
+                                                                     node_port=self.host_port + 22000)],
+                                                type='NodePort')
+        service = k8s_client.V1Service(metadata=V1ObjectMeta(name=self.container_name), spec=service_spec)
+        self.coreApi.create_namespaced_service(namespace=TODO_APP_NAMESPACE, body=service)
+
     def stop_app(self):
+        self.__delete_app_deployment()
+        self.__delete_app_service()
+
+    def __delete_app_deployment(self):
         res = self.appsApi.list_namespaced_deployment(namespace=TODO_APP_NAMESPACE,
                                                       field_selector=f'metadata.name={self.container_name}')
         if not len(res.items):
@@ -120,6 +135,17 @@ class KubernetesPlatformManager(PlatformManager):
             self.appsApi.delete_namespaced_deployment(name=self.container_name, namespace=TODO_APP_NAMESPACE)
             time.sleep(5)
             LOGGER.info(f'{self.container_name} deployment is stopped')
+
+    def __delete_app_service(self):
+        res = self.coreApi.list_namespaced_service(namespace=TODO_APP_NAMESPACE,
+                                                   field_selector=f'metadata.name={self.container_name}')
+        if not len(res.items):
+            LOGGER.info(f'{self.container_name} service is not running')
+        else:
+            LOGGER.warning(f'{self.container_name} service is running')
+            self.coreApi.delete_namespaced_service(name=self.container_name, namespace=TODO_APP_NAMESPACE)
+            time.sleep(1)
+            LOGGER.info(f'{self.container_name} service is stopped')
 
     def memory_usage(self):
         pod_name = self.__get_running_pod()

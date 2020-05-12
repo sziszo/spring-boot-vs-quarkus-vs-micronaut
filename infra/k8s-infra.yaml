@@ -11,6 +11,7 @@ items:
       type: NodePort
       ports:
         - port: 5432
+          nodePort: 30000
       selector:
         app: infra-db
   - apiVersion: apps/v1
@@ -39,4 +40,116 @@ items:
               envFrom:
                 - configMapRef:
                     name: infra-db-config
-
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: infra-prometheus
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port:   '9090'
+    spec:
+      selector:
+        app: prometheus-server
+      type: NodePort
+      ports:
+        - port: 9090
+          nodePort: 31000
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: prometheus-deployment
+      labels:
+        app: prometheus-server
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: prometheus-server
+      template:
+        metadata:
+          labels:
+            app: prometheus-server
+        spec:
+          containers:
+            - name: prometheus
+              image: prom/prometheus
+              args:
+                - "--config.file=/etc/prometheus/prometheus.yml"
+                - "--storage.tsdb.path=/prometheus/"
+              ports:
+                - containerPort: 9090
+              volumeMounts:
+                - name: prometheus-config-volume
+                  mountPath: /etc/prometheus/
+                - name: prometheus-storage-volume
+                  mountPath: /prometheus/
+          volumes:
+            - name: prometheus-config-volume
+              configMap:
+                defaultMode: 420
+                name: prometheus-server-conf
+            - name: prometheus-storage-volume
+              emptyDir: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: infra-grafana
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port:   '3000'
+    spec:
+      selector:
+        app: grafana
+      type: NodePort
+      ports:
+        - port: 3000
+          targetPort: 3000
+          nodePort: 32000
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: grafana-deployment
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: grafana
+      template:
+        metadata:
+          name: grafana
+          labels:
+            app: grafana
+        spec:
+          containers:
+            - name: grafana
+              image: grafana/grafana:latest
+              ports:
+                - name: grafana
+                  containerPort: 3000
+              resources:
+                limits:
+                  memory: "2Gi"
+                  cpu: "1000m"
+                requests:
+                  memory: "1Gi"
+                  cpu: "500m"
+              volumeMounts:
+                - mountPath: /var/lib/grafana
+                  name: grafana-storage
+                - mountPath: /etc/grafana/provisioning/datasources
+                  name: grafana-datasources
+                  readOnly: false
+                - mountPath: /etc/grafana/provisioning/dashboards
+                  name: grafana-dashboards
+                  readOnly: false
+          volumes:
+            - name: grafana-storage
+              emptyDir: {}
+            - name: grafana-datasources
+              configMap:
+                defaultMode: 420
+                name: grafana-datasources
+            - name: grafana-dashboards
+              configMap:
+                defaultMode: 420
+                name: grafana-dashboards
