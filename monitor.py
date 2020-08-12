@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-import argparse
+import json
 
+import argparse
 import pandas as pd
 import yaml
 
-from tools.app_monitor import SpringAppMonitor, QuarkusAppMonitor, set_verbose as set_verbose_app_monitor
+from tools.app_monitor import SpringAppMonitor, QuarkusAppMonitor, GeneralAppMonitor, \
+    set_verbose as set_verbose_app_monitor
 from tools.platform import set_verbose as set_verbose_platform
 
 
@@ -13,52 +15,56 @@ def set_verbose():
     set_verbose_app_monitor()
 
 
-class SpringTodoAppMonitor(SpringAppMonitor):
+class MonitorFactory:
 
-    def __init__(self, platform='docker'):
-        name = 'spring-todo-app'
-        super().__init__(image_name=f'{name}:latest', container_name=name, container_port=8090, platform=platform)
+    @staticmethod
+    def create_spring_todo_app_monitor(platform='docker'):
+        return MonitorFactory.create(app_type='spring', build_type='jvm', platform=platform,
+                                     app_desc={'name': 'spring-todo-app', 'container_port': 8090})
 
-    def start(self):
-        super().run()
-        return self.get_result_table(self.container_name)
-
-    def stop(self):
-        self.platformManager.stop_app()
-
-
-class QuarkusTodoAppMonitor(QuarkusAppMonitor):
-
-    def __init__(self, build_type='jvm', platform='docker'):
+    @staticmethod
+    def create_quarkus_todo_app_monitor(build_type='jvm', platform='docker'):
         port = 8091 if build_type == 'jvm' else 8092
-        name = f'quarkus-todo-app-{build_type}'
-        super().__init__(image_name=f'{name}:latest', container_name=name, container_port=8091, host_port=port,
-                         platform=platform)
-        self.build_type = build_type
+        return MonitorFactory.create(app_type='quarkus', build_type=build_type, platform=platform,
+                                     app_desc={'name': 'quarkus-todo-app', 'container_port': 8091,
+                                               'host_port': port})
 
-    def start(self):
-        super().run()
-        return super().get_result_table(self.container_name)
+    @staticmethod
+    def create(app_type, build_type='jvm', platform='docker', app_desc={}):
+        container_name = f'{app_desc["name"]}-{build_type}'
+        image_name = f'{container_name}:latest'
+        container_port = app_desc['container_port']
+        host_port = app_desc.get('host_port', container_port)
 
-    def stop(self):
-        self.platformManager.stop_app()
+        return {
+            'spring': SpringAppMonitor(image_name, container_name, container_port, platform),
+            'quarkus': QuarkusAppMonitor(image_name, container_name, container_port, host_port, platform),
+            'general': GeneralAppMonitor(image_name, container_name, container_port, host_port, platform)
+        }[app_type]
 
 
 class MonitorApp:
-    def __init__(self, build_type='jvm', app_type='all', platform='docker'):
+    def __init__(self, build_type='jvm', app_type='all', platform='docker', app_descriptors=[]):
         self.type = app_type
         self.build_type = build_type
         self.platform = platform
+        self.app_descriptors = app_descriptors
 
     def monitor(self, action_command='start'):
         monitors = []
-        if self.type != 'spring' and (self.build_type == 'all' or self.build_type == 'native'):
-            monitors.append(QuarkusTodoAppMonitor('native', self.platform))
-        if self.build_type == 'all' or self.build_type == 'jvm':
-            if self.type == 'all' or self.type == 'spring':
-                monitors.append(SpringTodoAppMonitor(platform=self.platform))
-            if self.type == 'all' or self.type == 'quarkus':
-                monitors.append(QuarkusTodoAppMonitor('jvm', self.platform))
+        if self.app_descriptors:
+            for app_desc in self.app_descriptors:
+                app_type = self.type if self.type != 'all' else app_desc['app_type']
+                build_type = self.build_type if self.build_type != 'all' else app_desc['build_type']
+                monitors.append(MonitorFactory.create(app_type, build_type, self.platform, app_desc))
+        else:
+            if self.type != 'spring' and (self.build_type == 'all' or self.build_type == 'native'):
+                monitors.append(MonitorFactory.create_quarkus_todo_app_monitor('native', self.platform))
+            if self.build_type == 'all' or self.build_type == 'jvm':
+                if self.type == 'all' or self.type == 'spring':
+                    monitors.append(MonitorFactory.create_spring_todo_app_monitor(self.platform))
+                if self.type == 'all' or self.type == 'quarkus':
+                    monitors.append(MonitorFactory.create_quarkus_todo_app_monitor('jvm', self.platform))
 
         is_start = action_command == 'start'
         result = {}
@@ -71,10 +77,12 @@ class MonitorApp:
 def main():
     parser = argparse.ArgumentParser(description='Manage the infrastructure',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-t", "--type", help="set app type", default='all', choices=['spring', 'quarkus', 'all'])
+    parser.add_argument("-t", "--type", help="set app type", default='all',
+                        choices=['spring', 'quarkus', 'all', 'general'])
     parser.add_argument("-b", "--build_type", help="set build type", default='all', choices=['jvm', 'native', 'all'])
     parser.add_argument("-p", "--platform", help="set platform type", default='docker', choices=['docker', 'k8s'])
     parser.add_argument("-v", "--verbose", help="set verbose", default=False, type=bool)
+    parser.add_argument("-d", "--app_desc", help="set app description file", type=str)
     parser.add_argument("action_command", help="set action command", default='start', choices=['start', 'stop'],
                         nargs='?')
     args = parser.parse_args()
@@ -87,7 +95,12 @@ def main():
     if args.verbose:
         set_verbose()
 
-    m = MonitorApp(args.build_type, args.type, args.platform)
+    app_descriptors = []
+    if args.app_desc:
+        with open(args.app_desc, 'r') as f:
+            app_descriptors = json.loads(f.read())
+
+    m = MonitorApp(args.build_type, args.type, args.platform, app_descriptors)
     result = m.monitor(args.action_command)
     if result:
         print(f'{pd.DataFrame(result)}')

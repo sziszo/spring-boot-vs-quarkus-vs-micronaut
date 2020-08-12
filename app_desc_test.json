@@ -1,0 +1,16 @@
+[
+  {
+    "name": "spring-todo-app",
+    "app_type": "spring",
+    "build_type": "jvm",
+    "container_port": 8090,
+    "host_port": 8095
+  },
+  {
+    "name": "quarkus-todo-app",
+    "app_type": "quarkus",
+    "build_type": "jvm",
+    "container_port": 8091,
+    "host_port": 8096
+  }
+]

@@ -22,10 +22,11 @@ class AppMonitor:
         self.startupMemoryUsage = 0
 
     def start(self):
-        pass
+        self.run()
+        return self.get_result_table(self.platformManager.container_name)
 
     def stop(self):
-        pass
+        self.platformManager.stop_app()
 
     def run(self):
         self.platformManager.stop_app()
@@ -59,7 +60,8 @@ class AppMonitor:
             attempt += 1
             if not done:
                 sleeping_time = 1
-                LOGGER.info(f'attempt {attempt}: waiting {sleeping_time} to get the logs of {self.platformManager.container_name}')
+                LOGGER.info(
+                    f'attempt {attempt}: waiting {sleeping_time} to get the logs of {self.platformManager.container_name}')
                 time.sleep(sleeping_time)
 
         self.startupTime = round(end_time - start_time, 3)
@@ -78,6 +80,9 @@ class AppMonitor:
 
     def print_memory_usage(self):
         LOGGER.info(f'memory usage: {self.startupMemoryUsage}Mb')
+
+    def get_result_table(self, app_name):
+        pass
 
     @staticmethod
     def to_result_table(app_name, app_startup, jvm_startup, startup_memory_usage):
@@ -137,3 +142,15 @@ class QuarkusAppMonitor(AppMonitor):
 
     def get_result_table(self, app_name):
         return super().to_result_table(app_name, self.app_startup, self.startupTime, self.startupMemoryUsage)
+
+
+class GeneralAppMonitor(AppMonitor):
+    LOGGER = logging.getLogger(__name__)
+
+    def __init__(self, image_name, container_name, container_port, host_port, platform='docker', timeout=120):
+        super().__init__(PlatformManagerFactory.create(platform, image_name, container_name, container_port, host_port),
+                         None, timeout)
+        self.image_name = image_name
+        self.container_name = container_name
+
+

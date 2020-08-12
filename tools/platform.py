@@ -27,6 +27,12 @@ class PlatformException(Exception):
 class PlatformManager:
     MAX_ATTEMPT = 10
 
+    def __init__(self, image_name, container_name, container_port, host_port=None):
+        self.image_name = image_name
+        self.container_name = container_name
+        self.container_port = container_port
+        self.host_port = host_port if host_port else container_port
+
     def start_app(self):
         pass
 
@@ -43,10 +49,7 @@ class PlatformManager:
 class DockerPlatformManager(PlatformManager):
 
     def __init__(self, image_name, container_name, container_port, host_port=None):
-        self.image_name = image_name
-        self.container_name = container_name
-        self.container_port = container_port
-        self.host_port = host_port if host_port else container_port
+        super().__init__(image_name, container_name, container_port, host_port)
         self.client = docker.from_env()
         self.container = None
 
@@ -87,10 +90,7 @@ class KubernetesPlatformManager(PlatformManager):
     MEMORY_USAGE_PATTERN = re.compile(r'([0-9]+)([a-zA-Z]+)')
 
     def __init__(self, image_name, container_name, container_port, host_port=None):
-        self.image_name = image_name
-        self.container_name = container_name
-        self.container_port = container_port
-        self.host_port = host_port if host_port else container_port
+        super().__init__(image_name, container_name, container_port, host_port)
         k8s_config.load_kube_config()
         self.appsApi = k8s_client.AppsV1Api()
         self.coreApi = k8s_client.CoreV1Api()
